@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Magic Block! — Block Blast Style</title>
+    <title>Block Magic</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,12 +18,12 @@
     <style>
       /* --- Biến CSS cho màu sắc và khoảng cách --- */
       :root {
-        --bg-main: #24345c;
-        --bg-dark: #1e2c4a;
-        --panel: #3d5082;
-        --text-color: #e2e8f0;
-        --score-color: #fce38a;
-        --accent-color: #8be4ff;
+        --bg-main: #3498db;
+        --bg-dark: #4a6198;
+        --panel: #7d61ff;
+        --text-color: #f0f8ff;
+        --score-color: #ffc107;
+        --accent-color: #fff;
       }
 
       /* --- Cấu hình chung và Typography --- */
@@ -111,7 +111,7 @@
         transition: background-color 0.3s ease;
       }
       .tag:hover {
-        background-color: #4a6092;
+        background-color: #8c73ff;
         cursor: default;
       }
       .score-display {
@@ -141,7 +141,7 @@
         justify-content: center;
       }
       .menu-btn:hover {
-        background-color: #4a6092;
+        background-color: #8c73ff;
         transform: scale(1.05);
       }
       .menu-btn:active {
@@ -155,7 +155,7 @@
         padding-top: 10px;
         box-sizing: border-box;
       }
-      
+
       /* --- Hiệu ứng bóng và góc bo tròn cho canvas --- */
       canvas {
         border-radius: 14px;
@@ -241,6 +241,27 @@
         user-select: none;
         letter-spacing: 0.03em;
       }
+      .block-magic-title {
+        font-size: 54px;
+        font-weight: 900;
+        background: linear-gradient(
+          45deg,
+          #ffa500,  /* Cam */
+          #ff4500,  /* Cam-đỏ */
+          #ffd700,  /* Vàng */
+          #a855f7,  /* Tím */
+          #38b6ff   /* Xanh dương */
+        );
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.04em;
+        margin-bottom: 24px;
+        animation: gradientShift 12s ease infinite;
+        user-select: none;
+      }
+
 
       /* --- Nút chung --- */
       .main-btn {
@@ -403,7 +424,7 @@
         border: 2px solid #556c9a;
       }
       .settings-options .btn:hover {
-        background-color: #4a6092;
+        background-color: #5d75ae;
         transform: scale(1.1);
       }
       .settings-options .btn:active {
@@ -439,12 +460,30 @@
       .rotate-btn:active {
         transform: scale(0.9);
       }
+      @keyframes pulse {
+          0% {
+              box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+              transform: scale(1);
+          }
+          50% {
+              box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+              transform: scale(1.05);
+          }
+          100% {
+              box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+              transform: scale(1);
+          }
+      }
+      .clearing-cell-anim {
+          animation: pulse 0.7s infinite alternate;
+          transition: background-color 0.2s ease;
+      }
     </style>
   </head>
   <body>
     <div class="wrap" id="main-wrap">
       <div id="home-view" class="views active" role="main" aria-label="Trang chủ trò chơi">
-        <h2 class="home-title" aria-label="Tiêu đề trò chơi Block Blast">BLOCK BLAST</h2>
+        <h2 class="block-magic-title" aria-label="Tiêu đề trò chơi Block Magic">BLOCK MAGIC</h2>
         <div class="home-subtitle" aria-label="Phụ đề trò chơi">ADVENTURE MASTER</div>
         <button
           id="classic-btn"
@@ -490,7 +529,7 @@
             <i class="fas fa-pause" aria-hidden="true"></i>
           </button>
         </div>
-        <canvas id="game" role="img" aria-label="Bảng chơi game 10 trên 10 ô"></canvas>
+        <canvas id="game" role="img" aria-label="Bảng chơi game 9 trên 9 ô"></canvas>
         <div class="tray-section">
           <div class="tray-pieces-container flex justify-between w-full"></div>
         </div>
@@ -557,8 +596,7 @@
             🔊
           </button>
           <button id="bgm-btn" class="btn" aria-pressed="false" aria-label="Bật/tắt nhạc nền">
-            🎵
-          </button>
+            🎵</button>
         </div>
         <button
           id="replay-in-pause"
@@ -572,14 +610,14 @@
           class="btn-settings-home main-btn"
           aria-label="Quay về trang chủ"
         >
-          Về Home
+          Quay Lại
         </button>
       </div>
     </div>
 
     <script>
       /* ----------------- CẤU HÌNH CỐ ĐỊNH CỦA TRÒ CHƠI ----------------- */
-      const GRID = 9; // Đã thay đổi kích thước bảng chơi thành 9x9
+      const GRID = 9;
       let CELL, GAP, BOARD_PAD, BOARD_SIZE, CANVAS_W, CANVAS_H, TRAY_TOP, TRAY_HEIGHT;
       let isPaused = false;
 
@@ -620,7 +658,6 @@
           [1, 2],
           [2, 2],
         ],
-        // Thêm khối 2x3 và phiên bản xoay của nó
         [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]],
         [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
       ];
@@ -666,7 +703,11 @@
       let bgmAudio = null;
       let bgmEnabled = false;
       let gameMode = "classic";
-      let rafId = null; // Để quản lý requestAnimationFrame
+      let rafId = null;
+      let clearingCells = [];
+      let lastMove = 0;
+      let comboCount = 0;
+      let lastClearTime = 0;
 
       /* ---------- ÂM THANH (các tệp online) ---------- */
       const SOUND_URLS = {
@@ -713,7 +754,7 @@
           bgmBtn.setAttribute("aria-pressed", "false");
         }
       }
-      
+
       function togglePause() {
           isPaused = !isPaused;
           if (isPaused) {
@@ -766,7 +807,7 @@
         CANVAS_W = wrapWidth;
         CANVAS_H = boardHeight + trayHeight + 40;
 
-        CELL = (CANVAS_W * 0.9) / GRID;
+        CELL = (CANVAS_W * 0.95) / GRID;
         GAP = CELL * 0.1;
         CELL = (CANVAS_W - (GRID + 1) * GAP) / GRID;
         BOARD_SIZE = GRID * CELL + (GRID - 1) * GAP;
@@ -786,8 +827,34 @@
       }
 
       /* ------------- KHỞI TẠO VÀ CẤU TRÚC LẠI KHAY ------------- */
+      // Cải thiện logic tạo khối: đảm bảo khối có thể đặt được
+      // Bổ sung: Tìm một khối có thể đặt được trên bảng hiện tại
+      function findPlaceableShape() {
+          const allShapes = Object.values(SHAPES);
+          const tempBoard = JSON.parse(JSON.stringify(board));
+
+          for (let i = 0; i < allShapes.length * 4; i++) {
+              const baseShape = rand(allShapes);
+              let tempShape = cloneShape(baseShape);
+              const rotationCount = Math.floor(Math.random() * 4);
+              for (let r = 0; r < rotationCount; r++) {
+                  tempShape = rotateRight(tempShape);
+              }
+              for (let y = 0; y < GRID; y++) {
+                  for (let x = 0; x < GRID; x++) {
+                      if (canPlace({shape: tempShape}, x, y, tempBoard)) {
+                          return tempShape;
+                      }
+                  }
+              }
+          }
+          // Trường hợp xấu nhất, nếu không tìm thấy khối nào có thể đặt,
+          // trả về một khối ngẫu nhiên.
+          return rand(SHAPES);
+      }
+
       function randomPiece() {
-        const base = cloneShape(rand(SHAPES));
+        const base = findPlaceableShape();
         const r = Math.floor(Math.random() * 4);
         let s = base;
         for (let i = 0; i < r; i++) s = rotateRight(s);
@@ -802,6 +869,7 @@
         const slotW = Math.floor((CANVAS_W - leftPad * 2 - totalGap) / 3);
 
         for (let i = 0; i < 3; i++) {
+          const s = tray[i].slotRect;
           const x = leftPad + i * (slotW + gapSlot);
           tray[i].slotRect = { x, y: TRAY_TOP, w: slotW, h: TRAY_HEIGHT };
 
@@ -827,8 +895,8 @@
         gameMode = mode;
         resizeGame();
         board = emptyBoard();
-        tray = [randomPiece(), randomPiece(), randomPiece()];
-        layoutTray();
+        tray = null;
+        maybeRefillTray();
         score = 0;
         scoreEl.textContent = score;
         clearingAnim = null;
@@ -839,11 +907,14 @@
         gameoverAnim = null;
         dragging = null;
         dragPos = null;
+        clearingCells = [];
         hideGameoverOverlay();
         hidePauseOverlay();
         isPaused = false;
         pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
         dirty = true;
+        comboCount = 0;
+        lastClearTime = 0;
         if (!rafId) tick();
       }
 
@@ -914,6 +985,72 @@
           }
         }
       }
+      function drawClearingEffect() {
+        if (clearingCells.length === 0) return;
+        const nowTime = now();
+        for (const cell of clearingCells) {
+            const cx = BOARD_PAD + cell.x * (CELL + GAP);
+            const cy = BOARD_PAD + cell.y * (CELL + GAP);
+            const t = Math.min(1, (nowTime - cell.start) / cell.duration);
+            const ease = 1 - Math.pow(1 - t, 3);
+            const alpha = 1 - ease;
+            const scale = 1 + ease * 0.1;
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = cell.color;
+            const size = CELL * scale;
+            const offset = (CELL - size) / 2;
+            roundedRect(cx + offset, cy + offset, size, size, 8);
+            ctx.shadowColor = cell.color;
+            ctx.shadowBlur = 15 * (1 - ease);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawHintEffect() {
+          if (!dragging || !dragPos) return;
+          const piece = tray[dragging.pieceIdx];
+          const ghost = ghostFromPointer(piece, dragPos.x, dragPos.y); // Sử dụng dragPos
+          if (!ghost || !ghost.valid) return;
+
+          let boardWithPiece = JSON.parse(JSON.stringify(board));
+          for (const [x, y] of ghost.cells) {
+              boardWithPiece[y][x] = 1;
+          }
+
+          const { rows, cols } = fullLines(boardWithPiece);
+
+          if (rows.length || cols.length) {
+              const cellsToFlash = new Set();
+              for (const y of rows) {
+                  for (let x = 0; x < GRID; x++) cellsToFlash.add(keyOf(x, y));
+              }
+              for (const x of cols) {
+                  for (let y = 0; y < GRID; y++) cellsToFlash.add(keyOf(x, y));
+              }
+
+              const flashColor = `rgba(135, 206, 235, 0.6)`; // Màu xanh da trời
+              const nowTime = now();
+              const pulse = Math.sin(nowTime / 100) * 0.2 + 0.4;
+              ctx.globalAlpha = pulse;
+
+              for (const key of cellsToFlash) {
+                  const [x, y] = key.split(",").map(Number);
+                  const cx = BOARD_PAD + x * (CELL + GAP);
+                  const cy = BOARD_PAD + y * (CELL + GAP);
+                  ctx.fillStyle = flashColor;
+                  roundedRect(cx, cy, CELL, CELL, 8);
+                  ctx.shadowColor = `rgba(135, 206, 235, 0.8)`;
+                  ctx.shadowBlur = 12;
+                  ctx.fill();
+                  ctx.shadowBlur = 0;
+              }
+              ctx.globalAlpha = 1;
+          }
+      }
+
       function drawTray() {
         for (let i = 0; i < 3; i++) {
           const s = tray[i].slotRect;
@@ -945,8 +1082,8 @@
       }
       function drawPieceInSlot(piece, slot, { fade = 1 } = {}) {
         const { w, h } = boundsOf(piece.shape);
-        const unit = 22,
-          gap = 4;
+        const unit = 16,
+          gap = 3;
         const pw = w * unit + (w - 1) * gap,
           ph = h * unit + (h - 1) * gap;
         const px = slot.x + Math.round((slot.w - pw) / 2),
@@ -964,44 +1101,49 @@
           ctx.globalAlpha = 0.2;
           ctx.fillStyle = "#fff";
           roundedRect(x + 1, y + 1, unit - 2, unit - 2, 6);
-          ctx.fill();
+          ctx.stroke();
           ctx.globalAlpha = 1;
         }
       }
+
+      // Cải thiện logic để khối ghost "snap" vào lưới
       function ghostFromPointer(piece, mx, my) {
-        if (
-          mx < BOARD_PAD ||
-          my < BOARD_PAD ||
-          mx > BOARD_PAD + BOARD_SIZE ||
-          my > BOARD_PAD + BOARD_SIZE
-        )
-          return null;
-        const relX = mx - BOARD_PAD,
-          relY = my - BOARD_PAD;
-        const stride = CELL + GAP;
-        const gx = Math.floor(relX / stride);
-        const gy = Math.floor(relY / stride);
-        const cells = [],
-          out = { valid: true };
-        for (const [dx, dy] of piece.shape) {
-          const x = gx + dx,
-            y = gy + dy;
-          if (x < 0 || x >= GRID || y < 0 || y >= GRID) out.valid = false;
-          else if (board[y][x] !== 0) out.valid = false;
-          cells.push([x, y]);
-        }
-        out.valid = out.valid && cells.length > 0;
-        out.cells = cells;
-        out.gx = gx;
-        out.gy = gy;
-        return out;
+          const gridOffsetX = mx - dragging.offsetX + (boundsOf(piece.shape).w * 30 / 2);
+          const gridOffsetY = my - dragging.offsetY + (boundsOf(piece.shape).h * 30 / 2);
+
+          const relX = gridOffsetX - BOARD_PAD;
+          const relY = gridOffsetY - BOARD_PAD;
+
+          if (relX < -CELL || relY < -CELL || relX > BOARD_SIZE + CELL || relY > BOARD_SIZE + CELL) {
+              return null;
+          }
+          
+          const gx = Math.round(relX / (CELL + GAP));
+          const gy = Math.round(relY / (CELL + GAP));
+          
+          const cells = [],
+              out = { valid: true };
+          for (const [dx, dy] of piece.shape) {
+              const x = gx + dx,
+                  y = gy + dy;
+              if (x < 0 || x >= GRID || y < 0 || y >= GRID) out.valid = false;
+              else if (board[y][x] !== 0) out.valid = false;
+              cells.push([x, y]);
+          }
+          out.valid = out.valid && cells.length > 0;
+          out.cells = cells;
+          out.gx = gx;
+          out.gy = gy;
+          return out;
       }
+
+
       function drawGhost(cells, valid) {
         if (!cells) return;
         ctx.globalAlpha = 0.36;
         ctx.fillStyle = valid ? "#10b981" : "#ef4444";
         for (const [x, y] of cells) {
-          if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
+          if (x < 0 || x >= GRID || y < 0 || y >= GRID) continue;
           const cx = BOARD_PAD + x * (CELL + GAP),
             cy = BOARD_PAD + y * (CELL + GAP);
           roundedRect(cx, cy, CELL, CELL, 8);
@@ -1151,11 +1293,13 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBoardPanel();
         drawGrid();
+        drawHintEffect();
+        drawClearingEffect();
         if (dragging && dragPos) {
           const ghost = ghostFromPointer(
             tray[dragging.pieceIdx],
             dragPos.x,
-            dragPos.y - 10
+            dragPos.y
           );
           if (ghost) drawGhost(ghost.cells, ghost.valid);
         }
@@ -1169,12 +1313,12 @@
       }
 
       /* ------------- LOGIC TRÒ CHƠI CỐT LÕI ------------- */
-      function canPlace(piece, gx, gy) {
+      function canPlace(piece, gx, gy, boardCheck = board) {
         for (const [dx, dy] of piece.shape) {
           const x = gx + dx,
             y = gy + dy;
           if (x < 0 || x >= GRID || y < 0 || y >= GRID) return false;
-          if (board[y][x] !== 0) return false;
+          if (boardCheck[y][x] !== 0) return false;
         }
         return true;
       }
@@ -1186,15 +1330,15 @@
           popAnims.set(keyOf(x, y), { start: now(), dur: 220 });
         }
       }
-      function fullLines() {
+      function fullLines(boardToCheck = board) {
         const rows = [],
           cols = [];
         for (let y = 0; y < GRID; y++)
-          if (board[y].every((v) => v !== 0)) rows.push(y);
+          if (boardToCheck[y].every((v) => v !== 0)) rows.push(y);
         for (let x = 0; x < GRID; x++) {
           let ok = true;
           for (let y = 0; y < GRID; y++)
-            if (board[y][x] === 0) {
+            if (boardToCheck[y][x] === 0) {
               ok = false;
               break;
             }
@@ -1202,66 +1346,54 @@
         }
         return { rows, cols };
       }
+
       function clearLines(rows, cols) {
         const cellsToClear = new Set();
         for (const y of rows) {
-          for (let x = 0; x < GRID; x++) {
-            cellsToClear.add(keyOf(x, y));
-            const cx = BOARD_PAD + x * (CELL + GAP) + CELL / 2;
-            const cy = BOARD_PAD + y * (CELL + GAP) + CELL / 2;
-            const color = board[y][x];
-            for (let i = 0; i < 8; i++) {
-              sparks.push({
-                x: cx,
-                y: cy,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8,
-                gravity: 0.2,
-                size: Math.random() * 4 + 2,
-                color: color,
-                alpha: 1,
-              });
+            for (let x = 0; x < GRID; x++) {
+                cellsToClear.add(keyOf(x, y));
+                clearingCells.push({x, y, start: now(), duration: 250, color: rand(COLORS)});
             }
-          }
         }
         for (const x of cols) {
-          for (let y = 0; y < GRID; y++) {
-            cellsToClear.add(keyOf(x, y));
-            const cx = BOARD_PAD + x * (CELL + GAP) + CELL / 2;
-            const cy = BOARD_PAD + y * (CELL + GAP) + CELL / 2;
-            const color = board[y][x];
-            for (let i = 0; i < 8; i++) {
-              sparks.push({
-                x: cx,
-                y: cy,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8,
-                gravity: 0.2,
-                size: Math.random() * 4 + 2,
-                color: color,
-                alpha: 1,
-              });
+            for (let y = 0; y < GRID; y++) {
+                cellsToClear.add(keyOf(x, y));
+                clearingCells.push({x, y, start: now(), duration: 250, color: rand(COLORS)});
             }
-          }
         }
-        setTimeout(() => {
-          for (const key of cellsToClear) {
-            const [x, y] = key.split(",").map(Number);
-            board[y][x] = 0;
-          }
-          dirty = true;
-        }, 100);
+
         playSound("clear");
+        dirty = true;
+
+        setTimeout(() => {
+            for (const key of cellsToClear) {
+                const [x, y] = key.split(",").map(Number);
+                board[y][x] = 0;
+                const cx = BOARD_PAD + x * (CELL + GAP) + CELL / 2;
+                const cy = BOARD_PAD + y * (CELL + GAP) + CELL / 2;
+                spawnConfetti(cx, cy, 8);
+            }
+            clearingCells = [];
+            dirty = true;
+        }, 250);
       }
+
       function maybeRefillTray() {
-        if (tray.every((p) => p.used)) {
-          tray = [randomPiece(), randomPiece(), randomPiece()];
+        if (tray === null || tray.every((p) => p.used)) {
+          // Bổ sung: Lặp lại cho đến khi tìm thấy một bộ khối có thể đặt được
+          let newTray;
+          do {
+            newTray = [randomPiece(), randomPiece(), randomPiece()];
+          } while (!anyMovesLeft(newTray));
+
+          tray = newTray;
           layoutTray();
           dirty = true;
         }
       }
-      function anyMovesLeft() {
-        for (const p of tray) {
+
+      function anyMovesLeft(trayToCheck = tray) {
+        for (const p of trayToCheck) {
           if (p.used) continue;
           let tempShape = cloneShape(p.shape);
           for(let r=0; r<4; r++){
@@ -1383,17 +1515,16 @@
         }
         return -1;
       }
-      function getPieceOffset(piece, mx, my, slot) {
+      
+      function getPieceOffset(piece, mx, my) {
           const { w, h } = boundsOf(piece.shape);
-          const unit = 30,
-            gap = 6;
-          const pw = w * unit + (w - 1) * gap,
-            ph = h * unit + (h - 1) * gap;
-          const px = slot.x + Math.round((slot.w - pw) / 2),
-            py = slot.y + Math.round((slot.h - ph) / 2);
+          const unit = 30, gap = 6;
+          const pw = w * unit + (w - 1) * gap;
+          const ph = h * unit + (h - 1) * gap;
 
-          return { offsetX: mx - px, offsetY: my - py };
+          return { offsetX: pw / 2, offsetY: ph / 2 };
       }
+
 
       function handlePointerDown(e) {
         if (isPaused) return;
@@ -1401,7 +1532,7 @@
         const idx = hitTray(p.x, p.y);
         if (idx >= 0) {
           const piece = tray[idx];
-          const offsets = getPieceOffset(piece, p.x, p.y, tray[idx].slotRect);
+          const offsets = getPieceOffset(piece, p.x, p.y);
 
           dragging = {
             pieceIdx: idx,
@@ -1419,7 +1550,6 @@
         }
       }
 
-      let lastMove = 0;
       function handlePointerMove(e) {
         if (!dragging || isPaused) return;
         const t = performance.now();
@@ -1436,34 +1566,51 @@
         const ghost = ghostFromPointer(
           piece,
           p.x,
-          p.y - 10
+          p.y
         );
+        let linesCleared = 0;
         if (ghost && ghost.valid) {
           placePiece(piece, ghost.gx, ghost.gy);
           piece.used = true;
-          
-          score += 15; // Đã thay đổi: Đặt 1 khối + 15 điểm
+
+          score += 15;
           scoreEl.textContent = score;
 
           const { rows, cols } = fullLines();
           if (rows.length || cols.length) {
+            const now = performance.now();
+            if (now - lastClearTime < 1000 && lastClearTime > 0) {
+                comboCount++;
+            } else {
+                comboCount = 1;
+            }
+            lastClearTime = now;
+
             const totalLines = rows.length + cols.length;
-            const lineClearBonus = totalLines * 30; // Đã thay đổi: Phá hàng +30 điểm mỗi hàng
+            const lineClearBonus = totalLines * 30 + comboCount * 10;
             score += lineClearBonus;
             scoreEl.textContent = score;
+            linesCleared = totalLines;
 
             clearLines(rows, cols);
 
+            let text = `+${lineClearBonus}`;
+            if (comboCount > 1) {
+                text += ` COMBO x${comboCount}`;
+            }
             floatingTexts.push({
               x: CANVAS_W / 2,
               y: BOARD_PAD + 100,
-              text: `+${lineClearBonus}`,
+              text: text,
               vy: -1.6,
               alpha: 1,
             });
 
+          } else {
+              comboCount = 0;
+              lastClearTime = 0;
           }
-          afterPlace();
+          afterPlace(linesCleared);
         } else {
           const from = { x: p.x - dragging.offsetX, y: p.y - dragging.offsetY };
           animateReturnToSlot(dragging.pieceIdx, from, 420);
@@ -1474,6 +1621,9 @@
             vy: -1.2,
             alpha: 1,
           });
+          // Bổ sung: Reset combo khi không đặt được khối
+          comboCount = 0;
+          lastClearTime = 0;
         }
         try {
           canvas.releasePointerCapture(e.pointerId);
@@ -1507,7 +1657,7 @@
       }
 
       /* ---------- SAU KHI ĐẶT KHỐI ---------- */
-      function afterPlace() {
+      function afterPlace(linesCleared) {
         let newBest = false;
         if (score > best) {
           best = score;
@@ -1515,7 +1665,18 @@
           localStorage.setItem("bb_best_polished", String(best));
           newBest = true;
         }
-        maybeRefillTray();
+
+        if (tray.every(p => p.used)) {
+            maybeRefillTray();
+        }
+
+        if (!anyMovesLeft()) {
+            setTimeout(() => {
+                showGameoverOverlay();
+            }, 120);
+            return;
+        }
+
         if (newBest) {
           spawnConfetti(CANVAS_W / 2, BOARD_PAD + BOARD_SIZE / 2, 48);
           spawnStarParticles(CANVAS_W / 2, CANVAS_H / 2, 30);
@@ -1527,11 +1688,7 @@
             alpha: 1,
           });
         }
-        if (!anyMovesLeft()) {
-          setTimeout(() => {
-            showGameoverOverlay();
-          }, 120);
-        }
+
         dirty = true;
       }
 
@@ -1548,7 +1705,8 @@
           dragging ||
           gameoverAnim ||
           starParticles.length ||
-          popAnims.size > 0
+          popAnims.size > 0 ||
+          clearingCells.length > 0
         ) {
           dirty = true;
         }
@@ -1629,3 +1787,4 @@
     </script>
   </body>
 </html>
+
